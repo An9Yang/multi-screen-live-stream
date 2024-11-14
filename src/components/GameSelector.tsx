@@ -33,14 +33,8 @@ const GameSelector: React.FC<GameSelectorProps> = ({ onSelectGame }) => {
         return;
       }
 
-      setFailedChannels(prev => {
-        const next = new Set(prev);
-        next.delete(channel.id);
-        return next;
-      });
-
       const game: Game = {
-        id: channel.id,
+        id: Date.now(), // Ensure unique IDs even for same channel
         title: channel.name,
         league: channel.category,
         status: 'LIVE',
@@ -50,7 +44,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({ onSelectGame }) => {
       };
       
       onSelectGame(game);
-      document.getElementById('game-selector')?.close();
+      (document.getElementById('game-selector') as HTMLDialogElement)?.close();
     } catch (error) {
       console.error('Failed to validate stream:', error);
       addToast('Failed to validate stream', 'error');

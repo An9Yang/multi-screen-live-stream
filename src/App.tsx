@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Maximize2, Minimize2, Plus, MonitorPlay } from 'lucide-react';
 import GameWindow from './components/GameWindow';
 import GameSelector from './components/GameSelector';
@@ -10,21 +10,28 @@ function App() {
   const [windowPositions, setWindowPositions] = useState<Record<number, WindowPosition>>({});
 
   const addGame = (game: Game) => {
-    if (activeGames.length < 4) {
-      setActiveGames([...activeGames, game]);
-      // Position new window with offset from last window
-      const offset = activeGames.length * 40;
-      setWindowPositions({
-        ...windowPositions,
-        [game.id]: {
-          x: 100 + offset,
-          y: 100 + offset,
-          width: 480,
-          height: 320,
-          zIndex: Math.max(...Object.values(windowPositions).map(p => p.zIndex || 0), 0) + 1
-        }
-      });
-    }
+    setActiveGames([...activeGames, game]);
+    
+    // Calculate available space
+    const mainContent = document.querySelector('main');
+    const maxWidth = mainContent?.clientWidth || window.innerWidth;
+    const maxHeight = mainContent?.clientHeight || window.innerHeight;
+    
+    // Improved cascade positioning
+    const windowCount = activeGames.length;
+    const offsetX = (windowCount * 40) % (maxWidth - 520); // 520 = window width + margin
+    const offsetY = (windowCount * 40) % (maxHeight - 360); // 360 = window height + margin
+    
+    setWindowPositions({
+      ...windowPositions,
+      [game.id]: {
+        x: offsetX,
+        y: offsetY,
+        width: 480,
+        height: 320,
+        zIndex: Math.max(...Object.values(windowPositions).map(p => p.zIndex || 0), 0) + 1
+      }
+    });
   };
 
   const removeGame = (gameId: number) => {
@@ -72,9 +79,8 @@ function App() {
               {isFullscreen ? <Minimize2 /> : <Maximize2 />}
             </button>
             <button
-              onClick={() => document.getElementById('game-selector')?.showModal()}
+              onClick={() => (document.getElementById('game-selector') as HTMLDialogElement)?.showModal()}
               className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-              disabled={activeGames.length >= 4}
             >
               <Plus className="h-5 w-5" />
               <span>Add Stream</span>
