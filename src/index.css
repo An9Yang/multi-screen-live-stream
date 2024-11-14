@@ -23,9 +23,13 @@
   opacity: 0;
 }
 
+/* Update window header styles */
 .window-header {
   height: 40px;
-  transition: background-color 150ms ease;
+  transition: all 150ms ease;
+  background-color: rgba(55, 65, 81, 0.8) !important;
+  backdrop-filter: blur(8px);
+  opacity: 0; /* Set default opacity to 0 */
 }
 
 .window-header:hover {
@@ -36,6 +40,7 @@
 .game-window {
   transition-property: transform, width, height;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 /* Different states for animations */
@@ -78,4 +83,49 @@
 
 .window-controls button:active {
   transform: scale(0.95);
+}
+
+/* Remove these blocks since we'll handle opacity differently
+.game-window .window-header,
+.game-window .window-controls,
+.game-window .bg-gradient-to-t {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+*/
+
+/* Hover state - show container and header */
+.game-window:hover .window-header,
+.game-window:hover .window-controls,
+.game-window:hover .bg-gradient-to-t {
+  opacity: 1;
+}
+
+/* Update hover state */
+.game-window:hover .window-header {
+  opacity: 1;
+}
+
+/* Keep window visible while dragging */
+.game-window.dragging .window-header,
+.game-window.dragging .window-controls,
+.game-window.dragging .bg-gradient-to-t {
+  opacity: 1;
+}
+
+/* Update dragging state */
+.game-window.dragging .window-header {
+  opacity: 1;
+}
+
+/* Keep controls visible when window is fullscreen */
+.game-window.fullscreen-transition .window-header,
+.game-window.fullscreen-transition .window-controls,
+.game-window.fullscreen-transition .bg-gradient-to-t {
+  opacity: 1;
+}
+
+/* Update fullscreen state */
+.game-window.fullscreen-transition .window-header {
+  opacity: 1;
 }
