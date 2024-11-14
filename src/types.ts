@@ -14,6 +14,7 @@ export interface WindowPosition {
   width: number;
   height: number;
   zIndex: number;
+  focused?: boolean; // Add this
 }
 
 export interface Position {

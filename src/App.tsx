@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Maximize2, Minimize2, Plus, MonitorPlay } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Maximize2, Minimize2, Plus, MonitorPlay, Grid } from 'lucide-react';
 import GameWindow from './components/GameWindow';
 import GameSelector from './components/GameSelector';
 import { Game, WindowPosition } from './types';
@@ -8,6 +8,7 @@ function App() {
   const [activeGames, setActiveGames] = useState<Game[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [windowPositions, setWindowPositions] = useState<Record<number, WindowPosition>>({});
+  const [isAutoArranging, setIsAutoArranging] = useState(false);
 
   const addGame = (game: Game) => {
     setActiveGames([...activeGames, game]);
@@ -62,6 +63,61 @@ function App() {
     setIsFullscreen(!isFullscreen);
   };
 
+  const autoArrangeWindows = () => {
+    const mainContent = document.querySelector('main');
+    if (!mainContent || activeGames.length === 0) return;
+    
+    setIsAutoArranging(true);
+    
+    const padding = 16; // Spacing between windows
+    const containerWidth = mainContent.clientWidth;
+    const containerHeight = mainContent.clientHeight;
+    
+    // Calculate optimal grid dimensions
+    const count = activeGames.length;
+    const cols = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / cols);
+    
+    // Calculate window dimensions
+    const windowWidth = Math.floor((containerWidth - (padding * (cols + 1))) / cols);
+    const windowHeight = Math.floor((containerHeight - (padding * (rows + 1))) / rows);
+    
+    // Update positions for all windows
+    const newPositions: Record<number, WindowPosition> = {};
+    
+    activeGames.forEach((game, index) => {
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      
+      newPositions[game.id] = {
+        x: padding + (col * (windowWidth + padding)),
+        y: padding + (row * (windowHeight + padding)),
+        width: windowWidth,
+        height: windowHeight,
+        zIndex: windowPositions[game.id]?.zIndex || 1
+      };
+    });
+    
+    setWindowPositions(newPositions);
+
+    // Reset the animation flag after animation completes
+    setTimeout(() => {
+      setIsAutoArranging(false);
+    }, 300); // Match this with the CSS transition duration
+  };
+
+  // Add window resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      if (document.querySelector('main')) {
+        autoArrangeWindows();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeGames.length]); // Re-run when game count changes
+
   return (
     <div className="min-h-screen bg-gray-900 overflow-hidden">
       {/* Header */}
@@ -72,6 +128,13 @@ function App() {
             <h1 className="text-2xl font-bold text-white">Multi-Screen Live</h1>
           </div>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={autoArrangeWindows}
+              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+              title="Auto-arrange windows"
+            >
+              <Grid className="h-5 w-5" />
+            </button>
             <button
               onClick={toggleFullscreen}
               className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
@@ -99,6 +162,7 @@ function App() {
             onPositionChange={(pos) => updatePosition(game.id, pos)}
             onFocus={() => bringToFront(game.id)}
             onRemove={() => removeGame(game.id)}
+            isAutoArranging={isAutoArranging}
           />
         ))}
         {activeGames.length === 0 && (

@@ -19,8 +19,63 @@
   background-origin: content-box;
   box-sizing: border-box;
   cursor: se-resize;
+  transition: opacity 150ms ease;
+  opacity: 0;
 }
 
 .window-header {
   height: 40px;
+  transition: background-color 150ms ease;
+}
+
+.window-header:hover {
+  background-color: rgb(55 65 81);
+}
+
+/* Window transition animations */
+.game-window {
+  transition-property: transform, width, height;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Different states for animations */
+.game-window.dragging {
+  transition: none;
+}
+
+.game-window.auto-arranging {
+  transition-duration: 300ms;
+}
+
+.game-window.fullscreen-transition {
+  transition-duration: 200ms;
+}
+
+/* Window resize handle animation */
+.game-window:hover .react-resizable-handle {
+  opacity: 0.5;
+}
+
+.game-window:hover .react-resizable-handle:hover {
+  opacity: 1;
+}
+
+/* Window focus ring animation */
+.game-window.focused {
+  box-shadow: 0 0 0 2px rgb(239 68 68 / 0.5);
+  transition: box-shadow 200ms ease;
+}
+
+/* Window controls animations */
+.window-controls button {
+  transition: all 150ms ease;
+}
+
+.window-controls button:hover {
+  transform: scale(1.1);
+  background-color: rgb(255 255 255 / 0.2);
+}
+
+.window-controls button:active {
+  transform: scale(0.95);
 }

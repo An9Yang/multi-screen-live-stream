@@ -12,6 +12,7 @@ interface GameWindowProps {
   onPositionChange: (position: Partial<WindowPosition>) => void;
   onFocus: () => void;
   onRemove: () => void;
+  isAutoArranging?: boolean; // Add this new prop
 }
 
 const GameWindow: React.FC<GameWindowProps> = ({
@@ -19,7 +20,8 @@ const GameWindow: React.FC<GameWindowProps> = ({
   position,
   onPositionChange,
   onFocus,
-  onRemove
+  onRemove,
+  isAutoArranging = false // Default to false
 }) => {
   const [isMuted, setIsMuted] = useState(true);
   const [streamError, setStreamError] = useState<string | null>(null);
@@ -98,6 +100,14 @@ const GameWindow: React.FC<GameWindowProps> = ({
     setIsFullscreen(!isFullscreen);
   };
 
+  const windowClasses = [
+    'game-window',
+    isDragging && 'dragging',
+    isAutoArranging && 'auto-arranging',
+    isFullscreen && 'fullscreen-transition',
+    position.focused && 'focused'
+  ].filter(Boolean).join(' ');
+
   return (
     <Draggable
       nodeRef={dragRef}
@@ -116,9 +126,13 @@ const GameWindow: React.FC<GameWindowProps> = ({
           zIndex: position.zIndex,
           width: position.width,
           height: position.height,
-          transition: isFullscreen ? 'all 0.3s ease-in-out' : 'none'
+          transform: `translate3d(0, 0, 0)`, // Force GPU acceleration
+          willChange: 'transform, width, height', // Optimize animations
+          transition: isAutoArranging ? 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' : 
+                     isFullscreen ? 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)' : 
+                     'none'
         }}
-        className={`${isFullscreen ? 'fixed inset-0' : ''}`}
+        className={windowClasses}
       >
         <ResizableBox
           width={position.width}
@@ -130,9 +144,9 @@ const GameWindow: React.FC<GameWindowProps> = ({
           ]}
           onResize={handleResize}
           resizeHandles={isFullscreen ? [] : ['se']}
-          className={`bg-gray-800 rounded-lg overflow-hidden shadow-2xl 
-            ${isDragging ? 'ring-2 ring-red-500/50' : ''}
-            ${isFullscreen ? 'rounded-none' : ''}`}
+          className={`bg-gray-800 rounded-lg overflow-hidden shadow-lg 
+            ${isFullscreen ? 'rounded-none' : ''}
+            transition-shadow duration-200`}
         >
           <div className="flex flex-col h-full">
             {/* Window Header */}
