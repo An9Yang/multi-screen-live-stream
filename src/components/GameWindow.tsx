@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Draggable from 'react-draggable';
-import { Volume2, VolumeX, X, AlertCircle, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, X, AlertCircle, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import { Game, WindowPosition } from '../types';
 import LiveStream from './LiveStream';
 import { ResizableBox } from 'react-resizable';
@@ -24,8 +24,16 @@ const GameWindow: React.FC<GameWindowProps> = ({
   const [isMuted, setIsMuted] = useState(true);
   const [streamError, setStreamError] = useState<string | null>(null);
   const [key, setKey] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [originalPosition, setOriginalPosition] = useState<WindowPosition | null>(null);
   const dragRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [minimizedPosition, setMinimizedPosition] = useState<WindowPosition | null>(null);
+  const mainContentRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    mainContentRef.current = document.querySelector('main');
+  }, []);
 
   const handleDragStart = () => {
     setIsDragging(true);
@@ -33,12 +41,16 @@ const GameWindow: React.FC<GameWindowProps> = ({
   };
 
   const handleDrag = (_e: any, data: { x: number; y: number }) => {
-    onPositionChange({ x: data.x, y: data.y });
+    if (!isFullscreen) {
+      onPositionChange({ x: data.x, y: data.y });
+    }
   };
 
   const handleDragStop = (_e: any, data: { x: number; y: number }) => {
     setIsDragging(false);
-    onPositionChange({ x: data.x, y: data.y });
+    if (!isFullscreen) {
+      onPositionChange({ x: data.x, y: data.y });
+    }
   };
 
   const handleStreamError = (error: Error) => {
@@ -51,42 +63,76 @@ const GameWindow: React.FC<GameWindowProps> = ({
   };
 
   const handleResize = (_e: React.SyntheticEvent, { size }: { size: { width: number; height: number } }) => {
-    onPositionChange({
-      width: size.width,
-      height: size.height
-    });
+    if (!isFullscreen) {
+      onPositionChange({
+        width: size.width,
+        height: size.height
+      });
+    }
+  };
+
+  const toggleFullscreen = () => {
+    const mainContent = mainContentRef.current;
+    if (!mainContent) return;
+
+    if (isFullscreen) {
+      // Restore to minimized position
+      if (minimizedPosition) {
+        onPositionChange(minimizedPosition);
+        setMinimizedPosition(null);
+      }
+    } else {
+      // Store current position before maximizing
+      setMinimizedPosition(position);
+      
+      // Calculate main content dimensions
+      const rect = mainContent.getBoundingClientRect();
+      onPositionChange({
+        x: 0,
+        y: 0,
+        width: rect.width,
+        height: rect.height,
+        zIndex: position.zIndex
+      });
+    }
+    setIsFullscreen(!isFullscreen);
   };
 
   return (
     <Draggable
       nodeRef={dragRef}
       handle=".window-header"
-      defaultPosition={{ x: position.x, y: position.y }}
+      position={{ x: position.x, y: position.y }}
       onStart={handleDragStart}
       onDrag={handleDrag}
       onStop={handleDragStop}
       cancel=".window-controls"
-      scale={1}
+      disabled={isFullscreen}
     >
       <div 
         ref={dragRef}
-        style={{ 
+        style={{
           position: 'absolute',
           zIndex: position.zIndex,
           width: position.width,
-          height: position.height
+          height: position.height,
+          transition: isFullscreen ? 'all 0.3s ease-in-out' : 'none'
         }}
+        className={`${isFullscreen ? 'fixed inset-0' : ''}`}
       >
         <ResizableBox
           width={position.width}
           height={position.height}
           minConstraints={[320, 240]}
-          maxConstraints={[1200, 800]}
+          maxConstraints={[
+            mainContentRef.current?.clientWidth || window.innerWidth,
+            mainContentRef.current?.clientHeight || window.innerHeight
+          ]}
           onResize={handleResize}
-          resizeHandles={['se']}
-          className={`bg-gray-800 rounded-lg overflow-hidden shadow-2xl transition-shadow ${
-            isDragging ? 'shadow-2xl ring-2 ring-red-500/50' : ''
-          }`}
+          resizeHandles={isFullscreen ? [] : ['se']}
+          className={`bg-gray-800 rounded-lg overflow-hidden shadow-2xl 
+            ${isDragging ? 'ring-2 ring-red-500/50' : ''}
+            ${isFullscreen ? 'rounded-none' : ''}`}
         >
           <div className="flex flex-col h-full">
             {/* Window Header */}
@@ -108,6 +154,13 @@ const GameWindow: React.FC<GameWindowProps> = ({
                     <RefreshCw className="h-4 w-4" />
                   </button>
                 )}
+                <button
+                  onClick={toggleFullscreen}
+                  className="p-1 text-gray-300 hover:text-white hover:bg-gray-600 rounded-full transition-colors"
+                  title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
                 <button
                   onClick={onRemove}
                   className="p-1 text-gray-300 hover:text-white hover:bg-gray-600 rounded-full transition-colors"
